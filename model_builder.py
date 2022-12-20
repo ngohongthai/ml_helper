@@ -44,6 +44,18 @@ class TinyVGG(nn.Module):
           nn.Flatten(),
           # Where did this in_features shape come from? 
           # It's because each layer of our network compresses and changes the shape of our inputs data.
+          #--------------------------------------------------------------------------------------------
+          # We can calculate the shape of our data at each layer by using the following formula:
+          # Wout = (Win - K + 2P)/S + 1
+          # Hout = (Hin - K + 2P)/S + 1
+          # Where:
+          # Wout = output widthw, Win = input width, K = kernel size, P = padding, S = stride
+          #
+          # Shape of data after MaxPool2d is calculated as follows:
+          # Wout = (Win - K)/S + 1
+          # Where:
+          # Wout = output width, Win = input width, K = kernel size, S = stride
+          #--------------------------------------------------------------------------------------------
           nn.Linear(in_features=hidden_units*13*13,
                     out_features=output_shape)
         )

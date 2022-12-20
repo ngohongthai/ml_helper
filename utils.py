@@ -11,6 +11,53 @@ import os
 import zipfile
 import requests
 from typing import List
+from PIL import Image
+
+def download_data(source: str, 
+                  destination: str,
+                  remove_source: bool = True) -> Path:
+    """Downloads a zipped dataset from source and unzips to destination.
+
+    Args:
+        source (str): A link to a zipped file containing data.
+        destination (str): A target directory to unzip data to.
+        remove_source (bool): Whether to remove the source after downloading and extracting.
+    
+    Returns:
+        pathlib.Path to downloaded data.
+    
+    Example usage:
+        download_data(source="https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi.zip",
+                      destination="pizza_steak_sushi")
+    """
+    # Setup path to data folder
+    data_path = Path("data/")
+    image_path = data_path / destination
+
+    # If the image folder doesn't exist, download it and prepare it... 
+    if image_path.is_dir():
+        print(f"[INFO] {image_path} directory exists, skipping download.")
+    else:
+        print(f"[INFO] Did not find {image_path} directory, creating one...")
+        image_path.mkdir(parents=True, exist_ok=True)
+        print("test")
+        # Download pizza, steak, sushi data
+        target_file = Path(source).name
+        with open(data_path / target_file, "wb") as f:
+            request = requests.get(source)
+            print(f"[INFO] Downloading {target_file} from {source}...")
+            f.write(request.content)
+
+        # Unzip pizza, steak, sushi data
+        with zipfile.ZipFile(data_path / target_file, "r") as zip_ref:
+            print(f"[INFO] Unzipping {target_file} data...") 
+            zip_ref.extractall(data_path)
+
+        # Remove .zip file
+        if remove_source:
+            os.remove(data_path / target_file)
+    
+    return image_path
 
 def walk_through_dir(dir_path):
     """
@@ -25,98 +72,99 @@ def walk_through_dir(dir_path):
       name of each subdirectory
     """
     for dirpath, dirnames, filenames in os.walk(dir_path):
-        print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
-
-def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
-    """Plots decision boundaries of model predicting on X in comparison to y.
-
-    Source - https://madewithml.com/courses/foundations/neural-networks/ (with modifications)
-    """
-    # Put everything to CPU (works better with NumPy + Matplotlib)
-    model.to("cpu")
-    X, y = X.to("cpu"), y.to("cpu")
-
-    # Setup prediction boundaries and grid
-    x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
-    y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 101), np.linspace(y_min, y_max, 101))
-
-    # Make features
-    X_to_pred_on = torch.from_numpy(np.column_stack((xx.ravel(), yy.ravel()))).float()
-
-    # Make predictions
-    model.eval()
-    with torch.inference_mode():
-        y_logits = model(X_to_pred_on)
-
-    # Test for multi-class or binary and adjust logits to prediction labels
-    if len(torch.unique(y)) > 2:
-        y_pred = torch.softmax(y_logits, dim=1).argmax(dim=1)  # mutli-class
-    else:
-        y_pred = torch.round(torch.sigmoid(y_logits))  # binary
-
-    # Reshape preds and plot
-    y_pred = y_pred.reshape(xx.shape).detach().numpy()
-    plt.contourf(xx, yy, y_pred, cmap=plt.cm.RdYlBu, alpha=0.7)
-    plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.RdYlBu)
-    plt.xlim(xx.min(), xx.max())
-    plt.ylim(yy.min(), yy.max())
-
-
-# Plot linear data or training and test and predictions (optional)
-def plot_predictions(
-    train_data, train_labels, test_data, test_labels, predictions=None
-):
-    """
-  Plots linear training data and test data and compares predictions.
-  """
-    plt.figure(figsize=(10, 7))
-
-    # Plot training data in blue
-    plt.scatter(train_data, train_labels, c="b", s=4, label="Training data")
-
-    # Plot test data in green
-    plt.scatter(test_data, test_labels, c="g", s=4, label="Testing data")
-
-    if predictions is not None:
-        # Plot the predictions in red (predictions were made on the test data)
-        plt.scatter(test_data, predictions, c="r", s=4, label="Predictions")
-
-    # Show the legend
-    plt.legend(prop={"size": 14})
-
-
-# Calculate accuracy (a classification metric)
-def accuracy_fn(y_true, y_pred):
-    """Calculates accuracy between truth labels and predictions.
+        if (len(filenames) > 0):
+            print(f"There are {len(filenames)} images in '{dirpath}'.")
+            
+def get_random_images(num_images: int, 
+                      data_path: str, 
+                      seed: int = 42) -> List[str]:
+    """Gets a list of random images from a directory.
 
     Args:
-        y_true (torch.Tensor): Truth labels for predictions.
-        y_pred (torch.Tensor): Predictions to be compared to predictions.
-
+        num_images (int): number of random images to return.
+        data_path (str): target directory to get random images from.
+        seed (int, optional): random seed. Defaults to 42.
+    
     Returns:
-        [torch.float]: Accuracy value between y_true and y_pred, e.g. 78.45
+        List of random images from a directory.
+    
+    Example usage:
+        get_random_images(num_images=5,
+                          data_path="pizza_steak_sushi")
     """
-    correct = torch.eq(y_true, y_pred).sum().item()
-    acc = (correct / len(y_pred)) * 100
-    return acc
+    # Set random seed
+    np.random.seed(seed)
 
+    # Get all the images in data_path
+    all_images = [image_path for image_path in Path(data_path).rglob("*.*")]
 
-def print_train_time(start, end, device=None):
-    """Prints difference between start and end time.
+    # Get random images
+    random_images = np.random.choice(all_images, size=num_images, replace=False)
+
+    return random_images
+
+def plot_random_images(num_images: int, 
+                       data_path: str, 
+                       seed: int = 42) -> None:
+    """Plots a number of random images from a directory.
 
     Args:
-        start (float): Start time of computation (preferred in timeit format). 
-        end (float): End time of computation.
-        device ([type], optional): Device that compute is running on. Defaults to None.
-
-    Returns:
-        float: time between start and end in seconds (higher is longer).
+        num_images (int): number of random images to plot.
+        data_path (str): target directory to get random images from.
+        seed (int, optional): random seed. Defaults to 42.
+    
+    Example usage:
+        plot_random_images(num_images=5,
+                           data_path="pizza_steak_sushi")
     """
-    total_time = end - start
-    print(f"\nTrain time on {device}: {total_time:.3f} seconds")
-    return total_time
+    # Get random images
+    random_images = get_random_images(num_images=num_images,
+                                      data_path=data_path,
+                                      seed=seed)
 
+    # Plot random images
+    plt.figure(figsize=(15, 15))
+    for i, image_path in enumerate(random_images):
+        ax = plt.subplot(1, num_images, i+1)
+        image = plt.imread(image_path)
+        plt.imshow(image)
+        plt.title(image_path.parent.name)
+        plt.axis("off")
+
+def plot_transformed_images(num_images: int, 
+                            data_path: str, 
+                            transform: torchvision.transforms, 
+                            seed=42):
+    """Plots a series of random images from image_paths.
+
+    Will open n image paths from image_paths, transform them
+    with transform and plot them side by side.
+
+    Args:
+        image_paths (list): List of target image paths. 
+        transform (PyTorch Transforms): Transforms to apply to images.
+        n (int, optional): Number of images to plot. Defaults to 3.
+        seed (int, optional): Random seed for the random generator. Defaults to 42.
+    """
+    random_images = get_random_images(num_images=num_images,
+                                      data_path=data_path,
+                                      seed=seed)
+    for image_path in random_images:
+        with Image.open(image_path) as f:
+            fig, ax = plt.subplots(1, 2)
+            ax[0].imshow(f) 
+            ax[0].set_title(f"Original \nSize: {f.size}")
+            ax[0].axis("off")
+
+            # Transform and plot image
+            # Note: permute() will change shape of image to suit matplotlib 
+            # (PyTorch default is [C, H, W] but Matplotlib is [H, W, C])
+            transformed_image = transform(f).permute(1, 2, 0) 
+            ax[1].imshow(transformed_image) 
+            ax[1].set_title(f"Transformed \nSize: {transformed_image.shape}")
+            ax[1].axis("off")
+
+            fig.suptitle(f"Class: {image_path.parent.stem}", fontsize=16)
 
 # Plot loss curves of a model
 def plot_loss_curves(results):
@@ -232,52 +280,6 @@ def set_seeds(seed: int=42):
     torch.manual_seed(seed)
     # Set the seed for CUDA torch operations (ones that happen on the GPU)
     torch.cuda.manual_seed(seed)
-
-def download_data(source: str, 
-                  destination: str,
-                  remove_source: bool = True) -> Path:
-    """Downloads a zipped dataset from source and unzips to destination.
-
-    Args:
-        source (str): A link to a zipped file containing data.
-        destination (str): A target directory to unzip data to.
-        remove_source (bool): Whether to remove the source after downloading and extracting.
-    
-    Returns:
-        pathlib.Path to downloaded data.
-    
-    Example usage:
-        download_data(source="https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi.zip",
-                      destination="pizza_steak_sushi")
-    """
-    # Setup path to data folder
-    data_path = Path("data/")
-    image_path = data_path / destination
-
-    # If the image folder doesn't exist, download it and prepare it... 
-    if image_path.is_dir():
-        print(f"[INFO] {image_path} directory exists, skipping download.")
-    else:
-        print(f"[INFO] Did not find {image_path} directory, creating one...")
-        image_path.mkdir(parents=True, exist_ok=True)
-        
-        # Download pizza, steak, sushi data
-        target_file = Path(source).name
-        with open(data_path / target_file, "wb") as f:
-            request = requests.get(source)
-            print(f"[INFO] Downloading {target_file} from {source}...")
-            f.write(request.content)
-
-        # Unzip pizza, steak, sushi data
-        with zipfile.ZipFile(data_path / target_file, "r") as zip_ref:
-            print(f"[INFO] Unzipping {target_file} data...") 
-            zip_ref.extractall(image_path)
-
-        # Remove .zip file
-        if remove_source:
-            os.remove(data_path / target_file)
-    
-    return image_path
 
 def save_model(model: torch.nn.Module,
                target_dir: str,

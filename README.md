@@ -6,7 +6,7 @@ git clone -b <branchname> <remote-repo-url>
 
 # Example
 
-git clone -b pytorch-deep-learning https://github.com/ngohongthai/ml_helper.git
+git clone -b tensorflow-deep-learning https://github.com/ngohongthai/ml_helper.git
 ```
 
 - Import to your code

@@ -3,8 +3,11 @@ Contains PyTorch model code to instantiate a TinyVGG model.
 """
 import tensorflow as tf
 
+width = int
+height = int
+channels = int
 
-def create_tiny_vgg(input_shape: (int, int, int), hidden_units: int, out_features: int) -> tf.keras.Model:
+def create_tiny_vgg(input_shape: (width, height, channels), hidden_units: int, out_features: int) -> tf.keras.Model:
     """Creates the TinyVGG architecture.
 
     Replicates the TinyVGG architecture from the CNN explainer website in PyTorch.

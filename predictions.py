@@ -23,8 +23,12 @@ def pred_and_plot_image(model,
     pred = model.predict(tf.expand_dims(img, axis=0))
     
     # Get the predicted class
-    pred_class = class_names[int(tf.round(pred)[0][0])]
+    if len(pred[0]) > 1: # check for multi-class
+        pred_class = class_names[pred.argmax()] # if more than one output, take the max
+    else:
+        pred_class = class_names[int(tf.round(pred)[0][0])] # if only one output, round
     
     plt.imshow(img)
-    plt.title(f"Predicted: {pred_class} \n Prob: {pred[0][0]}")
+    plt.title(f"Prediction: {pred_class}")
     plt.axis(False)
+    

@@ -74,6 +74,22 @@ def walk_through_dir(dir_path):
         if (len(filenames) > 0):
             print(f"There are {len(filenames)} images in '{dirpath}'.")
             
+def detail_dataset(train_dir: str, test_dir: str):
+    all_classes = os.listdir(train_dir)
+    print("There are {} classes in the dataset".format(len(all_classes)))
+    print("="*50)
+    title = ['class', 'train', 'test']
+    print("{:<20} {:<20} {:<20}".format(*title))
+    print("-"*50)
+    total_train = 0
+    total_test = 0
+    for i in all_classes:
+        print("{:<20} {:<20} {:<20}".format(i, len(os.listdir(train_dir+"/"+i)), len(os.listdir(test_dir+"/"+i))))
+        total_test += len(os.listdir(test_dir+"/"+i))
+        total_train += len(os.listdir(train_dir+"/"+i))
+    print("-"*50)
+    print("{:<20} {:<20} {:<20}".format("Total", total_train, total_test))
+            
 def get_random_images(num_images: int, 
                       data_path: str, 
                       seed: int = 42) -> List[str]:

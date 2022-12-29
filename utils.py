@@ -12,6 +12,9 @@ import zipfile
 import requests
 from typing import List
 from PIL import Image
+from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
+
 
 def download_data(source: str, 
                   destination: str,
@@ -328,7 +331,7 @@ def save_model(model: torch.nn.Module,
 
 def create_writer(experiment_name: str, 
                   model_name: str, 
-                  extra: str=None) -> torch.utils.tensorboard.writer.SummaryWriter():
+                  extra: str=None):
     """Creates a torch.utils.tensorboard.writer.SummaryWriter() instance saving to a specific log_dir.
 
     log_dir is a combination of runs/timestamp/experiment_name/model_name/extra.
@@ -341,7 +344,7 @@ def create_writer(experiment_name: str,
         extra (str, optional): Anything extra to add to the directory. Defaults to None.
 
     Returns:
-        torch.utils.tensorboard.writer.SummaryWriter(): Instance of a writer saving to log_dir.
+        SummaryWriter(): Instance of a writer saving to log_dir.
 
     Example usage:
         # Create a writer saving to "runs/2022-06-04/data_10_percent/effnetb2/5_epochs/"
@@ -351,9 +354,6 @@ def create_writer(experiment_name: str,
         # The above is the same as:
         writer = SummaryWriter(log_dir="runs/2022-06-04/data_10_percent/effnetb2/5_epochs/")
     """
-    from datetime import datetime
-    import os
-
     # Get timestamp of current date (all experiments on certain day live in same folder)
     timestamp = datetime.now().strftime("%Y-%m-%d") # returns current date in YYYY-MM-DD format
 

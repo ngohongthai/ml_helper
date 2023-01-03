@@ -8,7 +8,10 @@ BATCH_SIZE = 32
 CLASS_MODE = "binary" # "categorical" or "binary", "sparse", "input", None
 TARGET_SIZE = (224, 224)
 
-default_train_datagen = ImageDataGenerator(rescale=1/255.,
+default_train_datagen = ImageDataGenerator(rescale=1/255.)
+default_test_datagen = ImageDataGenerator(rescale=1/255.) 
+
+train_datagen_with_augmentation = ImageDataGenerator(rescale=1/255.,
                                              rotation_range=20, # rotate the image slightly between 0 and 20 degrees (note: this is an int not a float)
                                              shear_range=0.2, # shear the image
                                              zoom_range=0.2, # zoom into the image
@@ -16,8 +19,6 @@ default_train_datagen = ImageDataGenerator(rescale=1/255.,
                                              height_shift_range=0.2, # shift the image height ways
                                              horizontal_flip=True) # flip the image on the horizontal axis
 
-# Create ImageDataGenerator training instance without data augmentation
-default_test_datagen = ImageDataGenerator(rescale=1/255.) 
 
 def create_datasets(
     train_dir: str, 
@@ -61,3 +62,37 @@ def create_datasets(
                                              shuffle=False)
   
   return train_data, test_data
+
+def create_datasets_with_augmentation(
+    train_dir: str, 
+    test_dir: str,
+    target_size:(int, int) = TARGET_SIZE,
+    batch_size: int = BATCH_SIZE, 
+    class_mode: str = CLASS_MODE, # categorical or binary
+    shuffle: bool = True,):
+  return create_datasets(
+    train_dir = train_dir, 
+    test_dir = test_dir,
+    train_datagen = train_datagen_with_augmentation,
+    test_datagen = default_test_datagen,
+    target_size = target_size,
+    batch_size = batch_size, 
+    class_mode = class_mode, # categorical or binary
+    shuffle = shuffle)
+
+def create_datasets_without_augmentation(
+    train_dir: str, 
+    test_dir: str,
+    target_size:(int, int) = TARGET_SIZE,
+    batch_size: int = BATCH_SIZE, 
+    class_mode: str = CLASS_MODE, # categorical or binary
+    shuffle: bool = True,):
+  return create_datasets(
+    train_dir = train_dir, 
+    test_dir = test_dir,
+    train_datagen = default_train_datagen,
+    test_datagen = default_test_datagen,
+    target_size = target_size,
+    batch_size = batch_size, 
+    class_mode = class_mode, # categorical or binary
+    shuffle = shuffle)

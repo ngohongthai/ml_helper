@@ -5,6 +5,7 @@
 - [tf_nlp_helper.py](https://raw.githubusercontent.com/ngohongthai/ml_helper/main/tf_nlp_helper.py): Các helper functions dùng cho các bài toán xử lý ngôn ngữ tự nhiên dùng Tensorflow
 - [pt_cv_helper.py](https://raw.githubusercontent.com/ngohongthai/ml_helper/main/pt_cv_helper.py): Các helper functions dùng cho bàn toán Computer Vision dùng Pytorch
 - [pt_nlp_helper.py](https://raw.githubusercontent.com/ngohongthai/ml_helper/main/pt_nlp_helper.py): Các helper functions dùng cho bài toán xử lý ngôn ngữ tự nhiên dùng Pytorch
+- Các file `...notebook.ipynb` là các ví dụ tương ứng
 
 ### Download and import vào trong project
 

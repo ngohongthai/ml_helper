@@ -284,14 +284,14 @@ def create_input_layer(model_name):
 
 ###### Các hàm hỗ trợ đánh giá model, report ... #####
 def plot_loss_curves(results):
-    """Plots training curves of a results dictionary.
+    """ Vẽ đồ thị loss và accuracy của model
 
     Args:
-        results (dict): dictionary containing list of values, e.g.
+        results (dict): dictionary chứa loss và accuracy của model. Ví dụ:
             {"loss": [...],
-             "accuracy": [...],
-             "val_loss": [...],
-             "val_accuracy": [...]}
+            "accuracy": [...],
+            "val_loss": [...],
+            "val_accuracy": [...]}
     """
     loss = results["loss"]
     test_loss = results["accuracy"]
@@ -319,24 +319,23 @@ def plot_loss_curves(results):
     plt.xlabel("Epochs")
     plt.legend()
     
-# Our function needs a different name to sklearn's plot_confusion_matrix
 def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(10, 10), text_size=15, norm=False, savefig=False): 
-    """Makes a labelled confusion matrix comparing predictions and ground truth labels.
-
-    If classes is passed, confusion matrix will be labelled, if not, integer class values
-    will be used.
+    """ Tạo confusion matrix để đánh giá model dựa trên y_true và y_pred 
+    
+    Nếu classes được truyền vào, confusion matrix sẽ được gán nhãn, 
+    nếu không, giá trị class sẽ được gán nhãn bằng số nguyên
 
     Args:
-        y_true: Array of truth labels (must be same shape as y_pred).
-        y_pred: Array of predicted labels (must be same shape as y_true).
-        classes: Array of class labels (e.g. string form). If `None`, integer labels are used.
-        figsize: Size of output figure (default=(10, 10)).
-        text_size: Size of output figure text (default=15).
-        norm: normalize values or not (default=False).
-        savefig: save confusion matrix to file (default=False).
+        y_true: Mảng chứa nhãn thực tế (phải có cùng kích thước với y_pred).
+        y_pred: Mảng chứa nhãn dự đoán (phải có cùng kích thước với y_true).
+        classes: Mảng chứa nhãn của các class (ví dụ: dạng string). Nếu `None`, nhãn sẽ là số nguyên.
+        figsize: Kích thước của figure (default=(10, 10)).
+        text_size: Kích thước của chữ (default=15).
+        norm: normalize values hay không (default=False).
+        savefig: Lưu figure hay không (default=False).
     
     Returns:
-        A labelled confusion matrix plot comparing y_true and y_pred.
+        Một labelled confusion matrix được vẽ để so sánh y_true và y_pred.
 
     Example usage:
         make_confusion_matrix(y_true=test_labels, # ground truth test labels
@@ -395,6 +394,17 @@ def make_confusion_matrix(y_true, y_pred, classes=None, figsize=(10, 10), text_s
         fig.savefig("confusion_matrix.png")
         
 def create_tensorboard_callback(dir_name, experiment_name):
+    """ Tạo một callback TensorBoard để lưu lại các file log cho TensorBoard
+
+    Args:
+        dir_name (str): Tên thư mục chứa các file log của TensorBoard
+        experiment_name (str): Tên của experiment
+
+    Returns:
+        TensorBoard callback
+    """
+    
+    
     log_dir = dir_name + "/" + experiment_name + "/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
         log_dir=log_dir
@@ -404,6 +414,15 @@ def create_tensorboard_callback(dir_name, experiment_name):
 
 
 def compare_historys(original_history, new_history, initial_epochs=5):
+    """ So sánh 2 history của model
+        Thường là so sánh history của model gốc với history của model sau khi fine-tuning
+
+    Args:
+        original_history (dict): History của model gốc
+        new_history (dict): History của model mới
+        initial_epochs (int, optional): Số epochs ban đầu của model gốc. Defaults to 5.
+    """
+    
     # Get original history measurements
     acc = original_history.history["accuracy"]
     loss = original_history.history["loss"]
@@ -423,16 +442,14 @@ def compare_historys(original_history, new_history, initial_epochs=5):
     plt.subplot(2, 1, 1)
     plt.plot(total_acc, label='Training Accuracy')
     plt.plot(total_val_acc, label='Validation Accuracy')
-    plt.plot([initial_epochs-1, initial_epochs-1],
-              plt.ylim(), label='Start Fine Tuning') # reshift plot around epochs
+    plt.plot([initial_epochs-1, initial_epochs-1], plt.ylim(), label='Start Fine Tuning') # reshift plot around epochs
     plt.legend(loc='lower right')
     plt.title('Training and Validation Accuracy')
 
     plt.subplot(2, 1, 2)
     plt.plot(total_loss, label='Training Loss')
     plt.plot(total_val_loss, label='Validation Loss')
-    plt.plot([initial_epochs-1, initial_epochs-1],
-              plt.ylim(), label='Start Fine Tuning') # reshift plot around epochs
+    plt.plot([initial_epochs-1, initial_epochs-1], plt.ylim(), label='Start Fine Tuning') # reshift plot around epochs
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
     plt.xlabel('epoch')
@@ -440,13 +457,14 @@ def compare_historys(original_history, new_history, initial_epochs=5):
     
 def calculate_results(y_true, y_pred):
     """
-    Calculates model accuracy, precision, recall and f1 score of a binary classification model.
+    Tính toán độ chính xác, precision, recall và f1-score của một mô hình phân loại nhị phân.
 
     Args:
-        y_true: true labels in the form of a 1D array
-        y_pred: predicted labels in the form of a 1D array
-
-    Returns a dictionary of accuracy, precision, recall, f1-score.
+        y_true: true labels trong dạng 1D array
+        y_pred: labels đuợc dự đoán bởi mô hình trong dạng 1D array
+        
+    Returns:
+        Một dictionary của accuracy, precision, recall, f1-score.
     """
     # Calculate model accuracy
     model_accuracy = accuracy_score(y_true, y_pred) * 100

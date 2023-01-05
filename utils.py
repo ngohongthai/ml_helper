@@ -161,6 +161,7 @@ def create_tensorboard_callback(dir_name, experiment_name):
     print(f"Saving TensorBoard log files to: {log_dir}")
     return tensorboard_callback
 
+
 def compare_historys(original_history, new_history, initial_epochs=5):
     # Get original history measurements
     acc = original_history.history["accuracy"]

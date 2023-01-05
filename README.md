@@ -16,7 +16,7 @@ if not os.path.exists("tf_cv_helper.py"):
 else:
     print("[INFO] 'tf_cv_helper.py' already exists, skipping download.")
 
-import tf_cv_helper.py as helper
+import tf_cv_helper as helper
 
 # Sử dụng trong file notebook để auto reload những thay đổi có trong file helper (nếu có)
 %reload_ext autoreload

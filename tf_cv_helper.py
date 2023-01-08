@@ -12,6 +12,7 @@ import sys
 import platform
 import itertools
 import datetime
+import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -493,3 +494,41 @@ def calculate_results(y_true, y_pred):
                     "recall": model_recall,
                     "f1": model_f1}
     return model_results
+
+# Tạo hàm vẽ ảnh ngẫu nhiên cùng với các dự đoán của nó
+def plot_random_image(model, images, true_labels, classes):
+    """Chọn một ảnh ngẫu nhiên, vẽ và dán nhãn nó với nhãn đúng và nhãn đã dự đoán.
+
+    Args:
+        model: mô hình đã huấn luyện (huấn luyện trên dữ liệu tương tự với dữ liệu trong ảnh.)
+        images: tập hợp các ảnh ngẫu nhiên (ở dạng tensor).
+        true_labels: mảng các nhãn gốc cho ảnh.
+        classes: mảng các tên lớp cho anhe.
+    
+    Returns:
+        Biểu đồ ảnh ngẫu nhiên từ `images` với nhãn lớp đã dự đoán từ `model`
+        cũng như nhãn lớp đúng từ `true_labels`.
+    """ 
+    # Thiết lập random integer
+    i = random.randint(0, len(images))
+    
+    # Tạo các mục tiêu và dự đoán
+    target_image = images[i]
+    pred_probs = model.predict(target_image.reshape(1, 28, 28)) # cần reshape để mô hình có đúng kích thước
+    pred_label = classes[pred_probs.argmax()]
+    true_label = classes[true_labels[i]]
+
+    # Vẽ ảnh mục tiêu
+    plt.imshow(target_image, cmap=plt.cm.binary)
+
+    # Thay đổi màu của tiêu đề tùy xem dự đoán đúng hay sai
+    if pred_label == true_label:
+        color = "green"
+    else:
+        color = "red"
+
+    # Thêm thông tin xlabel (prediction/true label)
+    plt.xlabel("Pred: {} {:2.0f}% (True: {})".format(pred_label,
+                                                    100*tf.reduce_max(pred_probs),
+                                                    true_label),
+                color=color) # đặt color là green hoặc red

@@ -412,6 +412,24 @@ def create_tensorboard_callback(dir_name, experiment_name):
     print(f"Saving TensorBoard log files to: {log_dir}")
     return tensorboard_callback
 
+def create_learning_rate_callback():
+    """ Tạo một callback để thay đổi learning rate theo thời gian
+
+    Returns:
+        LearningRateScheduler callback
+    """
+    lr_schedule = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-4 * 10**(epoch/20))
+    return lr_schedule
+
+def plot_learning_rate_and_loss(history, epochs):
+    # Vẽ biểu đồ learning rate với loss
+    lrs = 1e-4 * (10 ** (np.arange(epochs)/20))
+    plt.figure(figsize=(10, 7))
+    plt.semilogx(lrs, history["loss"]) # muốn trục x (learning rate) theo thang log
+    plt.xlabel("Learning Rate")
+    plt.ylabel("Loss")
+    plt.title("Learning rate vs. loss")
+
 
 def compare_historys(original_history, new_history, initial_epochs=5):
     """ So sánh 2 history của model

@@ -312,11 +312,9 @@ def create_preprocessing_layer(data_augmentation=False, data_normalization=True)
     
     preprocessing_layers = Sequential([], name="preprocessing_layers")
     if data_augmentation:
-        preprocessing_layers.add(layers.RandomFlip('horizontal'))
-        preprocessing_layers.add(layers.RandomHeight(0.2))
-        preprocessing_layers.add(layers.RandomWidth(0.2))
-        preprocessing_layers.add(layers.RandomZoom(0.2))
+        preprocessing_layers.add(layers.RandomFlip("horizontal_and_vertical"))
         preprocessing_layers.add(layers.RandomRotation(0.2))
+        
     if data_normalization:
         preprocessing_layers.add(layers.Rescaling(1./255))
         
@@ -591,61 +589,43 @@ def compare_historys(original_history, new_history, initial_epochs=5):
     plt.xlabel('epoch')
     plt.show()
     
-def calculate_results(y_true, y_pred):
-    """
-    Tính toán độ chính xác, precision, recall và f1-score của một mô hình phân loại nhị phân.
+# def calculate_results(y_true, y_pred):
+#     """
+#     Tính toán độ chính xác, precision, recall và f1-score của một mô hình phân loại nhị phân.
 
-    Args:
-        y_true: true labels trong dạng 1D array
-        y_pred: labels đuợc dự đoán bởi mô hình trong dạng 1D array
+#     Args:
+#         y_true: true labels trong dạng 1D array
+#         y_pred: labels đuợc dự đoán bởi mô hình trong dạng 1D array
         
-    Returns:
-        Một dictionary của accuracy, precision, recall, f1-score.
-    """
-    # Calculate model accuracy
-    model_accuracy = accuracy_score(y_true, y_pred) * 100
-    # Calculate model precision, recall and f1 score using "weighted average
-    model_precision, model_recall, model_f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted")
-    model_results = {"accuracy": model_accuracy,
-                    "precision": model_precision,
-                    "recall": model_recall,
-                    "f1": model_f1}
-    return model_results
+#     Returns:
+#         Một dictionary của accuracy, precision, recall, f1-score.
+#     """
+#     # Calculate model accuracy
+#     model_accuracy = accuracy_score(y_true, y_pred) * 100
+#     # Calculate model precision, recall and f1 score using "weighted average
+#     model_precision, model_recall, model_f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted")
+#     model_results = {"accuracy": model_accuracy,
+#                     "precision": model_precision,
+#                     "recall": model_recall,
+#                     "f1": model_f1}
+#     return model_results
 
 # Tạo hàm vẽ ảnh ngẫu nhiên cùng với các dự đoán của nó
-def plot_random_image(model, images, true_labels, classes):
-    """Chọn một ảnh ngẫu nhiên, vẽ và dán nhãn nó với nhãn đúng và nhãn đã dự đoán.
-
-    Args:
-        model: mô hình đã huấn luyện (huấn luyện trên dữ liệu tương tự với dữ liệu trong ảnh.)
-        images: tập hợp các ảnh ngẫu nhiên (ở dạng tensor).
-        true_labels: mảng các nhãn gốc cho ảnh.
-        classes: mảng các tên lớp cho anhe.
-    
-    Returns:
-        Biểu đồ ảnh ngẫu nhiên từ `images` với nhãn lớp đã dự đoán từ `model`
-        cũng như nhãn lớp đúng từ `true_labels`.
-    """ 
-    # Thiết lập random integer
-    i = random.randint(0, len(images))
-    
-    # Tạo các mục tiêu và dự đoán
-    target_image = images[i]
-    pred_probs = model.predict(target_image.reshape(1, 28, 28)) # cần reshape để mô hình có đúng kích thước
-    pred_label = classes[pred_probs.argmax()]
-    true_label = classes[true_labels[i]]
-
-    # Vẽ ảnh mục tiêu
-    plt.imshow(target_image, cmap=plt.cm.binary)
-
-    # Thay đổi màu của tiêu đề tùy xem dự đoán đúng hay sai
-    if pred_label == true_label:
-        color = "green"
-    else:
-        color = "red"
-
-    # Thêm thông tin xlabel (prediction/true label)
-    plt.xlabel("Pred: {} {:2.0f}% (True: {})".format(pred_label,
-                                                    100*tf.reduce_max(pred_probs),
-                                                    true_label),
-                color=color) # đặt color là green hoặc red
+def predict_and_plot(model, filename, image_size, class_names):
+    # Đọc trong target file (hình ảnh)
+    img = tf.io.read_file(filename)
+    # Giải mã file đã đọc thành tensor & đảm bảo 3 kênh màu
+    # (mô hình được huấn luyện trên ảnh có 3 kênh màu và đôi lúc ảnh có 4 kênh màu) 
+    img = tf.image.decode_image(img, channels=3)
+    # Resize ảnh (về cùng size mà mô hình được huấn luyện)
+    img = tf.image.resize(img, size = image_size)
+    # Rescale ảnh (nhận tất cả các giá trị trong khoảng 0-1)
+    img = img/255
+    # Đưa ra dự đoán
+    pred = model.predict(tf.expand_dims(img, axis=0))
+    # Lấy tên lớp đã dự đoán
+    pred_class = class_names[int(tf.round(pred)[0][0])]
+    # Vẽ ảnh và lớp đã dự đoán
+    plt.imshow(img)
+    plt.title(f"Predicted: {pred_class}")
+    plt.axis(False)

@@ -26,7 +26,8 @@ def print_env_info():
     """ Print environment information
     
     """
-    print("################ ENVIRONMENT ################")
+    print("\n")
+    print("#-------------- ENVIRONMENT ---------------#")
     print(f"Python Platform: {platform.platform()}")
     print(f"Python {sys.version}")
     print(f"Tensor Flow Version: {tf.__version__}")
@@ -35,7 +36,7 @@ def print_env_info():
 
     gpu = len(tf.config.list_physical_devices('GPU'))>0
     print("GPU is", "available" if gpu else "NOT AVAILABLE")
-    print("#############################################")
+    print("#-------------------------------------------#")
 
 ##### Các hàm hỗ trợ download data, visualize data ... #####
 
@@ -72,18 +73,21 @@ def print_tree(data_dir, level = 0):
         if os.path.isdir(f):
             print_tree(f, level + 1)
 
-def view_random_images(target_dir, num_images = 3, seed = 42):
+def view_random_images(data_dir, num_images = 3, seed = 42):
     """ Show num_images random images from target_dir
 
     Parameters:
-        target_dir (str): Path to target directory
+        data_dir (str): Path to target directory
         num_images (int, optional): Number of images to show. Defaults to 3.
         seed (int, optional): Seed for random number generator. Defaults to 42.
+    
+    Returns:
+        Numpy Array: Array of random images directory
     """
     
     np.random.seed(seed)
     # Get all the images in data_path
-    all_images = [image_path for image_path in Path(target_dir).rglob("*.*")]
+    all_images = [image_path for image_path in Path(data_dir).rglob("*.*")]
     # Get random images
     random_images = np.random.choice(all_images, size=num_images, replace=False)
     # Plot random images
@@ -92,11 +96,60 @@ def view_random_images(target_dir, num_images = 3, seed = 42):
         ax = plt.subplot(1, num_images, i+1)
         image = plt.imread(image_path)
         plt.imshow(image)
-        plt.title(image_path.parent.name)
+        plt.title(image_path.parent.name + "\n" + str(image.shape))
         plt.axis("off")
+
+    return random_images
+
+def get_sub_dirs(data_dir):
+    """ Get sub-directories of data_dir
+
+    Args:
+        data_dir (str): Path to data directory
+
+    Returns:
+        Numpy Array: Array of sub-directories
+    """
+    
+    data_dir = Path(data_dir)
+    # tạo một danh sách class_names từ các sub-directory
+    sub_dirs = np.array(sorted([item.name for item in data_dir.glob('*')]))
+    return sub_dirs
         
+############# Các hàm hỗ trợ build datasets ############
+def create_datasets(train_dir, test_dir, label_mode, image_size, batch_size = 32):
+    """ Tạo datasets từ các thư mục train_dir và test_dir
+
+    Args:
+        train_dir (str): Path to train directory
+        test_dir (_type_): Path to test directory
+        label_mode (_type_): Loại label, "categorical" hoặc "binary"
+        image_size (_type_): Kích thước ảnh
+        batch_size (int, optional): Kích thước batch. Defaults to 32.
+
+    Returns:
+        tupe : train_datasets, test_datasets, class_names
+    """
+    
+    train_datasets = tf.keras.preprocessing.image_dataset_from_directory(
+        train_dir,
+        label_mode=label_mode,
+        batch_size=batch_size,
+        image_size=image_size)
+    
+    test_datasets = tf.keras.preprocessing.image_dataset_from_directory(
+        test_dir,
+        label_mode=label_mode,
+        batch_size=batch_size,
+        image_size=image_size,
+        shuffle=False)
+    
+    return train_datasets, test_datasets, train_datasets.class_names
+    
 
 ############# Các hàm hỗ trợ build models ############
+from tensorflow.keras import layers
+from tensorflow.keras.models import Sequential
 
 # model_name = "efficientnetv2-b0" # @param ['efficientnetv2-s', 'efficientnetv2-m', 'efficientnetv2-l', 'efficientnetv2-s-21k', 'efficientnetv2-m-21k', 'efficientnetv2-l-21k', 'efficientnetv2-xl-21k', 'efficientnetv2-b0-21k', 'efficientnetv2-b1-21k', 'efficientnetv2-b2-21k', 'efficientnetv2-b3-21k', 'efficientnetv2-s-21k-ft1k', 'efficientnetv2-m-21k-ft1k', 'efficientnetv2-l-21k-ft1k', 'efficientnetv2-xl-21k-ft1k', 'efficientnetv2-b0-21k-ft1k', 'efficientnetv2-b1-21k-ft1k', 'efficientnetv2-b2-21k-ft1k', 'efficientnetv2-b3-21k-ft1k', 'efficientnetv2-b0', 'efficientnetv2-b1', 'efficientnetv2-b2', 'efficientnetv2-b3', 'efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3', 'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7', 'bit_s-r50x1', 'inception_v3', 'inception_resnet_v2', 'resnet_v1_50', 'resnet_v1_101', 'resnet_v1_152', 'resnet_v2_50', 'resnet_v2_101', 'resnet_v2_152', 'nasnet_large', 'nasnet_mobile', 'pnasnet_large', 'mobilenet_v2_100_224', 'mobilenet_v2_130_224', 'mobilenet_v2_140_224', 'mobilenet_v3_small_100_224', 'mobilenet_v3_small_075_224', 'mobilenet_v3_large_100_224', 'mobilenet_v3_large_075_224']
 
@@ -259,13 +312,13 @@ def create_preprocessing_layer(data_augmentation=False, data_normalization=True)
     
     preprocessing_layers = Sequential([], name="preprocessing_layers")
     if data_augmentation:
-        preprocessing_layers.add(preprocessing.RandomFlip('horizontal'))
-        preprocessing_layers.add(preprocessing.RandomHeight(0.2))
-        preprocessing_layers.add(preprocessing.RandomWidth(0.2))
-        preprocessing_layers.add(preprocessing.RandomZoom(0.2))
-        preprocessing_layers.add(preprocessing.RandomRotation(0.2))
+        preprocessing_layers.add(layers.RandomFlip('horizontal'))
+        preprocessing_layers.add(layers.RandomHeight(0.2))
+        preprocessing_layers.add(layers.RandomWidth(0.2))
+        preprocessing_layers.add(layers.RandomZoom(0.2))
+        preprocessing_layers.add(layers.RandomRotation(0.2))
     if data_normalization:
-        preprocessing_layers.add(preprocessing.Rescaling(1./255))
+        preprocessing_layers.add(layers.Rescaling(1./255))
         
     return preprocessing_layers
 
@@ -284,6 +337,69 @@ def create_input_layer(model_name):
     
     return input_layer
 
+def save_model_architecture(model):
+    """ Lưu model architecture vào file json
+
+    Args:
+        model (Model): Model cần lưu
+    """
+    
+    model_json = model.to_json()
+    model_name = model.name
+    with open(model_name+".json", "w") as json_file:
+        json_file.write(model_json)
+        
+def load_model_architecture(model_name):
+    """ Load model architecture từ file json
+
+    Args:
+        model_name (str): Tên của model
+
+    Returns:
+        Model: Model đã load
+    """
+    
+    with open(model_name+".json", "r") as json_file:
+        model_json = json_file.read()
+    model = tf.keras.models.model_from_json(model_json)
+    return model
+
+####################### EXAMPLE IN NOTEBOOK #######################
+# IMAGE_SIZE = (224, 224)
+
+# preprocessing_layer = helper.create_preprocessing_layer()
+# input_layer = layers.Input(shape=IMAGE_SIZE + (3,), name="input_layer")
+
+# cnn = tf.keras.models.Sequential([
+#   tf.keras.layers.Conv2D(10, 3, activation="relu"),
+#   tf.keras.layers.Conv2D(10, 3, activation="relu"),
+#   tf.keras.layers.MaxPool2D(pool_size=2, # pool_size cũng có thể là (2, 2)
+#                             padding="valid"), # padding cũng có thể là 'same'
+#   tf.keras.layers.Conv2D(10, 3, activation="relu"),
+#   tf.keras.layers.Conv2D(10, 3, activation="relu"), # activation='relu' == tf.keras.layers.Activations(tf.nn.relu)
+#   tf.keras.layers.MaxPool2D(2),
+#   tf.keras.layers.Flatten()
+# ])
+
+# x = preprocessing_layer(input_layer)
+# x = cnn(x)
+# output = tf.keras.layers.Dense(1, activation="sigmoid")(x)
+# model_1 = tf.keras.Model(input_layer, output, name ="model_1")
+
+# # Biên dịch mô hình
+# model_1.compile(loss="binary_crossentropy",
+#               optimizer=tf.keras.optimizers.Adam(),
+#               metrics=["accuracy"])
+
+# # Khớp mô hình
+# history_1 = model_1.fit(train_data,
+#                         epochs=5,
+#                         steps_per_epoch=len(train_data),
+#                         validation_data=test_data,
+#                         validation_steps=len(test_data))
+#
+####################################################################
+
 ###### Các hàm hỗ trợ đánh giá model, report ... #####
 def plot_loss_curves(results):
     """ Vẽ đồ thị loss và accuracy của model
@@ -296,9 +412,9 @@ def plot_loss_curves(results):
             "val_accuracy": [...]}
     """
     loss = results["loss"]
-    test_loss = results["accuracy"]
+    test_loss = results["val_loss"]
 
-    accuracy = results["val_loss"]
+    accuracy = results["accuracy"]
     test_accuracy = results["val_accuracy"]
 
     epochs = range(len(results["loss"]))

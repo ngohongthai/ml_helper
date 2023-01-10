@@ -37,5 +37,9 @@ from tf_cv_helper import *
 %reload_ext autoreload
 %autoreload 2
 
-helper.print_env_info()
+# Ignore warning
+import warnings
+warnings.filterwarnings('ignore')
+
+print_env_info()
 ```

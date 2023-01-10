@@ -117,34 +117,35 @@ def get_sub_dirs(data_dir):
     return sub_dirs
         
 ############# Các hàm hỗ trợ build datasets ############
-def create_datasets(train_dir, test_dir, label_mode, image_size, batch_size = 32):
-    """ Tạo datasets từ các thư mục train_dir và test_dir
+def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42):
+    """ Create train, validation and test datasets
 
     Args:
         train_dir (str): Path to train directory
-        test_dir (_type_): Path to test directory
-        label_mode (_type_): Loại label, "categorical" hoặc "binary"
-        image_size (_type_): Kích thước ảnh
-        batch_size (int, optional): Kích thước batch. Defaults to 32.
+        test_dir (str): Path to test directory
+        image_size (int, int): Size of image
+        batch_size (int, optional): Batch size. Defaults to 32.
+        seed (int, optional): Seed for random number generator. Defaults to 42.
 
     Returns:
-        tupe : train_datasets, test_datasets, class_names
-    """
+        (datasets): Train, validation and test datasets
+    """    
     
-    train_datasets = tf.keras.preprocessing.image_dataset_from_directory(
+    train_data, validation_data = tf.keras.utils.image_dataset_from_directory(
         train_dir,
-        label_mode=label_mode,
+        validation_split=0.2,
+        subset="both",
         batch_size=batch_size,
         image_size=image_size)
     
-    test_datasets = tf.keras.preprocessing.image_dataset_from_directory(
+    test_data = tf.keras.utils.image_dataset_from_directory(
         test_dir,
-        label_mode=label_mode,
-        batch_size=batch_size,
+        batch_size=1,
         image_size=image_size,
+        seed=seed,
         shuffle=False)
     
-    return train_datasets, test_datasets, train_datasets.class_names
+    return train_data, val_data, test_data
     
 
 ############# Các hàm hỗ trợ build models ############
@@ -314,6 +315,9 @@ def create_preprocessing_layer(data_augmentation=False, data_normalization=True)
     if data_augmentation:
         preprocessing_layers.add(layers.RandomFlip("horizontal_and_vertical"))
         preprocessing_layers.add(layers.RandomRotation(0.2))
+        preprocessing_layers.add(layers.RandomZoom(0.3))
+        # preprocessing_layers.add(layers.RandomBrightness([-0.8,0.8]))
+        # preprocessing_layers.add(layers.RandomContrast(0.2))
         
     if data_normalization:
         preprocessing_layers.add(layers.Rescaling(1./255))
@@ -611,31 +615,17 @@ def compare_historys(original_history, new_history, initial_epochs=5):
 #     return model_results
 
 # Tạo hàm vẽ ảnh ngẫu nhiên cùng với các dự đoán của nó
-def predict_and_plot(model, filename, image_size, class_names):
-    # Đọc trong target file (hình ảnh)
-    img = tf.io.read_file(filename)
-    # Giải mã file đã đọc thành tensor & đảm bảo 3 kênh màu
-    # (mô hình được huấn luyện trên ảnh có 3 kênh màu và đôi lúc ảnh có 4 kênh màu) 
-    img = tf.image.decode_image(img, channels=3)
-    # Resize ảnh (về cùng size mà mô hình được huấn luyện)
-    img = tf.image.resize(img, size = image_size)
-    # Rescale ảnh (nhận tất cả các giá trị trong khoảng 0-1)
-    img = img/255
-    # Đưa ra dự đoán
-    pred = model.predict(tf.expand_dims(img, axis=0))
-    # Lấy tên lớp đã dự đoán
-    pred_class = class_names[int(tf.round(pred)[0][0])]
-    # Vẽ ảnh và lớp đã dự đoán
-    plt.imshow(img)
-    plt.title(f"Predicted: {pred_class}")
-    plt.axis(False)
+def predict_and_plot(filenames, model, class_names):
+    # load image
+    for filename in filenames:
+        im
     
 ####################### EXPERIMENT #######################
 
 class Experiment:
-    def __init__(self, model, model_name, history, description):
+    def __init__(self, name, model, history, description):
         self.model = model
-        self.model_name = model_name
+        self.name = name
         self.history = history
         self.description = description
         self.filepath = 'experiment_histories/'
@@ -646,11 +636,11 @@ class Experiment:
         plt.plot(self.history.history['val_accuracy'])
         plt.plot(other_history.history['val_accuracy'])
         
-        plt.title(self.model_name + ' model accuracy')
+        plt.title(self.name + ' model accuracy')
         plt.ylabel('Accuracy')
         plt.xlabel('Epoch')
         
-        plt.legend([self.model_name, other_experiment.model_name], loc='upper right')
+        plt.legend([self.name, other_experiment.name], loc='upper right')
         plt.show()
 
     def plot_loss_curves(self):
@@ -663,13 +653,13 @@ class Experiment:
                 "val_loss": [...],
                 "val_accuracy": [...]}
         """
-        loss = self.history["loss"]
-        test_loss = self.history["val_loss"]
+        loss = self.history.history["loss"]
+        test_loss = self.history.history["val_loss"]
 
-        accuracy = self.history["accuracy"]
-        test_accuracy = self.history["val_accuracy"]
+        accuracy = self.history.history["accuracy"]
+        test_accuracy = self.history.history["val_accuracy"]
 
-        epochs = range(len(self.history["loss"]))
+        epochs = range(len(self.history.history["loss"]))
 
         plt.figure(figsize=(15, 7))
 
@@ -690,10 +680,10 @@ class Experiment:
         plt.legend()
         
     def save_model(self):
-        path = self.filepath+self.model_name+'.h5'
+        path = self.filepath+self.name+'.h5'
         self.model.save(path)
 
     def load_model(self):
-        path = self.filepath+self.model_name+'.h5'
+        path = self.filepath+self.name+'.h5'
         self.model = tensorflow.keras.models.load_model(path)
     

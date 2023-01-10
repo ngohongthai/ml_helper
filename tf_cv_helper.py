@@ -136,7 +136,8 @@ def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42)
         validation_split=0.2,
         subset="both",
         batch_size=batch_size,
-        image_size=image_size)
+        image_size=image_size,
+        seed=seed)
     
     test_data = tf.keras.utils.image_dataset_from_directory(
         test_dir,
@@ -145,7 +146,7 @@ def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42)
         seed=seed,
         shuffle=False)
     
-    return train_data, val_data, test_data
+    return train_data, validation_data, test_data
     
 
 ############# Các hàm hỗ trợ build models ############

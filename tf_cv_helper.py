@@ -629,3 +629,71 @@ def predict_and_plot(model, filename, image_size, class_names):
     plt.imshow(img)
     plt.title(f"Predicted: {pred_class}")
     plt.axis(False)
+    
+####################### EXPERIMENT #######################
+
+class Experiment:
+    def __init__(self, model, model_name, history, description):
+        self.model = model
+        self.model_name = model_name
+        self.history = history
+        self.description = description
+        self.filepath = 'experiment_histories/'
+        
+    def compare_experiment(self, other_experiment):
+        other_history = other_experiment.history
+        
+        plt.plot(self.history.history['val_accuracy'])
+        plt.plot(other_history.history['val_accuracy'])
+        
+        plt.title(self.model_name + ' model accuracy')
+        plt.ylabel('Accuracy')
+        plt.xlabel('Epoch')
+        
+        plt.legend([self.model_name, other_experiment.model_name], loc='upper right')
+        plt.show()
+
+    def plot_loss_curves(self):
+        """ Vẽ đồ thị loss và accuracy của model
+
+        Args:
+            results (dict): dictionary chứa loss và accuracy của model. Ví dụ:
+                {"loss": [...],
+                "accuracy": [...],
+                "val_loss": [...],
+                "val_accuracy": [...]}
+        """
+        loss = self.history["loss"]
+        test_loss = self.history["val_loss"]
+
+        accuracy = self.history["accuracy"]
+        test_accuracy = self.history["val_accuracy"]
+
+        epochs = range(len(self.history["loss"]))
+
+        plt.figure(figsize=(15, 7))
+
+        # Plot loss
+        plt.subplot(1, 2, 1)
+        plt.plot(epochs, loss, label="train_loss")
+        plt.plot(epochs, test_loss, label="test_loss")
+        plt.title("Loss")
+        plt.xlabel("Epochs")
+        plt.legend()
+
+        # Plot accuracy
+        plt.subplot(1, 2, 2)
+        plt.plot(epochs, accuracy, label="train_accuracy")
+        plt.plot(epochs, test_accuracy, label="test_accuracy")
+        plt.title("Accuracy")
+        plt.xlabel("Epochs")
+        plt.legend()
+        
+    def save_model(self):
+        path = self.filepath+self.model_name+'.h5'
+        self.model.save(path)
+
+    def load_model(self):
+        path = self.filepath+self.model_name+'.h5'
+        self.model = tensorflow.keras.models.load_model(path)
+    

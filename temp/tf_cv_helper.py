@@ -132,7 +132,7 @@ def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42)
     """ 
     train_data = tf.keras.utils.image_dataset_from_directory(
         train_dir,
-        validation_split=validation_rate,
+        validation_split=0.2,
         subset="training",
         batch_size=batch_size,
         image_size=image_size,
@@ -140,7 +140,7 @@ def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42)
         
     validation_data = tf.keras.utils.image_dataset_from_directory(
         train_dir,
-        validation_split=validation_rate,
+        validation_split=0.2,
         subset="validation",
         batch_size=batch_size,
         image_size=image_size,
@@ -157,13 +157,13 @@ def create_datasets(train_dir, test_dir, image_size, batch_size = 32, seed = 42)
     
     
 ############# Các hàm hỗ trợ build models ############
-from tensorflow.keras import layers
+from tensorflow.keras import layers, Model
 from tensorflow.keras.models import Sequential
 
 # model_name = "efficientnetv2-b0" # @param ['efficientnetv2-s', 'efficientnetv2-m', 'efficientnetv2-l', 'efficientnetv2-s-21k', 'efficientnetv2-m-21k', 'efficientnetv2-l-21k', 'efficientnetv2-xl-21k', 'efficientnetv2-b0-21k', 'efficientnetv2-b1-21k', 'efficientnetv2-b2-21k', 'efficientnetv2-b3-21k', 'efficientnetv2-s-21k-ft1k', 'efficientnetv2-m-21k-ft1k', 'efficientnetv2-l-21k-ft1k', 'efficientnetv2-xl-21k-ft1k', 'efficientnetv2-b0-21k-ft1k', 'efficientnetv2-b1-21k-ft1k', 'efficientnetv2-b2-21k-ft1k', 'efficientnetv2-b3-21k-ft1k', 'efficientnetv2-b0', 'efficientnetv2-b1', 'efficientnetv2-b2', 'efficientnetv2-b3', 'efficientnet_b0', 'efficientnet_b1', 'efficientnet_b2', 'efficientnet_b3', 'efficientnet_b4', 'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7', 'bit_s-r50x1', 'inception_v3', 'inception_resnet_v2', 'resnet_v1_50', 'resnet_v1_101', 'resnet_v1_152', 'resnet_v2_50', 'resnet_v2_101', 'resnet_v2_152', 'nasnet_large', 'nasnet_mobile', 'pnasnet_large', 'mobilenet_v2_100_224', 'mobilenet_v2_130_224', 'mobilenet_v2_140_224', 'mobilenet_v3_small_100_224', 'mobilenet_v3_small_075_224', 'mobilenet_v3_large_100_224', 'mobilenet_v3_large_075_224']
 
 # Dictionary of model names to their corresponding TF Hub handles
-model_handle_map = {
+_model_handle_map = {
     "efficientnetv2-s": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_s/feature_vector/2",
     "efficientnetv2-m": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_m/feature_vector/2",
     "efficientnetv2-l": "https://tfhub.dev/google/imagenet/efficientnet_v2_imagenet1k_l/feature_vector/2",
@@ -217,7 +217,7 @@ model_handle_map = {
 }
 
 # Dictionary of image sizes for each model.
-model_image_size_map = {
+_model_image_size_map = {
     "efficientnetv2-s": 384,
     "efficientnetv2-m": 480,
     "efficientnetv2-l": 480,
@@ -255,7 +255,7 @@ model_image_size_map = {
     "pnasnet_large": 331,
 }
 
-def get_model_handle(model_name):
+def _get_model_handle(model_name):
     """ Lấy url của model
 
     Args:
@@ -268,13 +268,13 @@ def get_model_handle(model_name):
         str: url của model
     """
     
-    if model_name not in model_handle_map:
+    if model_name not in _model_handle_map:
         raise ValueError(
             "Model name '{}' is undefined. Available models: {}".format(
-                model_name, list(model_handle_map.keys())))
-    return model_handle_map[model_name]
+                model_name, list(_model_handle_map.keys())))
+    return _model_handle_map[model_name]
 
-def get_model_input_size(model_name):
+def input_image_size(model_name):
     """ Lấy kích thước của ảnh đầu vào của model
 
     Args:
@@ -287,11 +287,11 @@ def get_model_input_size(model_name):
         (int, int): Kích thước của ảnh đầu vào của model (image size)
     """
     
-    if model_name not in model_image_size_map:
+    if model_name not in _model_image_size_map:
         raise ValueError(
             "Model name '{}' is undefined. Available models: {}".format(
-                model_name, list(model_image_size_map.keys())))
-    pixel_size = model_image_size_map[model_name]
+                model_name, list(_model_image_size_map.keys())))
+    pixel_size = _model_image_size_map[model_name]
     return (pixel_size, pixel_size)
 
 def get_base_model(model_name, trainable=False):
@@ -305,7 +305,7 @@ def get_base_model(model_name, trainable=False):
         Model: Base model
     """    
     
-    base_model_handle = get_model_handle(model_name)
+    base_model_handle = _get_model_handle(model_name)
     base_model = hub.KerasLayer(base_model_handle, trainable=trainable)
     return base_model
 
@@ -335,6 +335,76 @@ def input_layer(image_size):
     
     input_layer = layers.Input(shape=image_size+(3,), name="input_layer")
     return input_layer
+
+def create_model(pretrained_model_name, num_classes, trainable=False, include_data_augmentation=False):
+    image_size = input_image_size(pretrained_model_name)
+    
+    inputs = input_layer(image_size)
+    if include_data_augmentation:
+        x = data_augmentation_layer()(inputs)
+    else:
+        x = inputs
+        
+    x = layers.Rescaling(1.0 / 255)(x)
+    
+    base_model = get_base_model(pretrained_model_name, trainable)
+    
+    x = base_model(x, training=False)
+    
+    if num_classes == 2:
+        activation = "sigmoid"
+        units = 1
+    else:
+        activation = "softmax"
+        units = num_classes
+
+    x = layers.Dropout(0.2)(x)
+    outputs = layers.Dense(units, activation=activation)(x)
+    return Model(inputs, outputs)
+    
+
+def create_baseline(image_size, num_classes, include_data_augmentation=False):
+    """ Tạo baseline model
+
+    Args:
+        image_size (tuple): Kích thước của ảnh đầu vào của model
+        num_classes (int): Số lượng class
+        include_data_augmentation (bool, optional): Có sử dụng data augmentation hay không. Defaults to False.
+
+    Returns:
+        Model: Baseline model
+    """    
+    
+    inputs = input_layer(image_size)
+    if include_data_augmentation:
+        x = data_augmentation_layer()(inputs)
+    else:
+        x = inputs
+        
+    x = layers.Rescaling(1.0 / 255)(x)   
+    cnn = tf.keras.Sequential([
+        layers.Conv2D(16, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Conv2D(32, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Conv2D(64, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Flatten(),
+        layers.Dense(128, activation='relu')])
+    
+    x = cnn(x)
+    
+    if num_classes == 2:
+        activation = "sigmoid"
+        units = 1
+    else:
+        activation = "softmax"
+        units = num_classes
+
+    #x = layers.Dropout(0.5)(x)
+    outputs = layers.Dense(units, activation=activation)(x)
+    return Model(inputs, outputs)
+    
 
 
 ###### Các hàm hỗ trợ đánh giá model, report ... #####
@@ -527,6 +597,34 @@ def compare_historys(original_history, new_history, initial_epochs=5):
     plt.title('Training and Validation Loss')
     plt.xlabel('epoch')
     plt.show()
+    
+# def calculate_results(y_true, y_pred):
+#     """
+#     Tính toán độ chính xác, precision, recall và f1-score của một mô hình phân loại nhị phân.
+
+#     Args:
+#         y_true: true labels trong dạng 1D array
+#         y_pred: labels đuợc dự đoán bởi mô hình trong dạng 1D array
+        
+#     Returns:
+#         Một dictionary của accuracy, precision, recall, f1-score.
+#     """
+#     # Calculate model accuracy
+#     model_accuracy = accuracy_score(y_true, y_pred) * 100
+#     # Calculate model precision, recall and f1 score using "weighted average
+#     model_precision, model_recall, model_f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted")
+#     model_results = {"accuracy": model_accuracy,
+#                     "precision": model_precision,
+#                     "recall": model_recall,
+#                     "f1": model_f1}
+#     return model_results
+
+# Tạo hàm vẽ ảnh ngẫu nhiên cùng với các dự đoán của nó
+# def predict_and_plot(filenames, model, class_names):
+#     # load image
+#     for filename in filenames:
+#         im
+    
 
 ###### Các hàm lưu architecture, model ... #####
 def save_model_architecture(model):

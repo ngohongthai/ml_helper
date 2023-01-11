@@ -22,21 +22,9 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-try:
-  import tensorflow as tf
-  import tensorflow_hub as hub
-  import tensorflow.keras
-  assert int(tf.__version__.split(".")[1]) >= 10, "tensorflow version should be 2.10+"
-except:
-  print("Updating tensorflow...")
-  # For windows
-  #!pip3 install --upgrade tensorflow
-  # For macos
-  !pip3 install tensorflow-macos==2.10.0
-  import tensorflow as tf
-  import tensorflow_hub as hub
-  import tensorflow.keras
+import tensorflow as tf
+import tensorflow_hub as hub
+import tensorflow.keras
 
 if not os.path.exists("tf_cv_helper.py"):
     !wget https://raw.githubusercontent.com/ngohongthai/ml_helper/main/tf_cv_helper.py
@@ -54,4 +42,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 print_env_info()
+
+# tensorflow vs 2.10.0 trở lên lỗi trên Macos M1
+# Với môi trường windows không lỗi, nhưng có sự khác biệt trong 1 số hàm
+assert int(tf.__version__.split(".")[1]) == 9, "tensorflow version should be 2.9.0"
 ```
